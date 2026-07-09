@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PrivacyGuard - AI Chat Data Leak Protection</title>
+  <meta name="description" content="PrivacyGuard is a Chrome extension that detects and redacts API keys, passwords, credit cards, SSN, emails, and other sensitive data before it is sent to AI chat tools.">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d8dee9;
+      --panel: #ffffff;
+      --soft: #f4f7fb;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --accent: #d97706;
+      --danger: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #fbfcfe;
+      line-height: 1.6;
+    }
+
+    a { color: var(--brand-dark); }
+
+    .wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    nav {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 7px;
+      background: var(--brand);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 750;
+      border: 1px solid var(--brand);
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--brand-dark);
+      border-color: #9ac7c2;
+    }
+
+    main { overflow: hidden; }
+
+    .hero {
+      padding: 72px 0 52px;
+      background: linear-gradient(180deg, #eef8f6 0%, #fbfcfe 78%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(360px, .98fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      color: var(--brand-dark);
+      font-weight: 780;
+      font-size: 14px;
+      margin: 0 0 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: .98;
+      letter-spacing: 0;
+      max-width: 760px;
+    }
+
+    .lead {
+      margin: 24px 0 0;
+      max-width: 650px;
+      color: #344054;
+      font-size: 18px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 34px;
+      max-width: 680px;
+    }
+
+    .trust div {
+      padding: 14px;
+      border: 1px solid #cddbd8;
+      background: rgba(255,255,255,.72);
+      border-radius: 8px;
+      min-height: 84px;
+    }
+
+    .trust strong {
+      display: block;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .trust span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .product-shot {
+      border: 1px solid #b9c6d3;
+      background: #162033;
+      border-radius: 8px;
+      box-shadow: 0 24px 70px rgba(24, 39, 75, .18);
+      overflow: hidden;
+    }
+
+    .shot-top {
+      min-height: 44px;
+      background: #0d1524;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .dot:nth-child(2) { background: #f59e0b; }
+    .dot:nth-child(3) { background: #22c55e; }
+
+    .shot-body {
+      padding: 24px;
+      color: #e8eef7;
+    }
+
+    .warning {
+      background: #fff7ed;
+      color: #7c2d12;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .warning strong { color: #9a3412; }
+
+    .finding {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: #202c42;
+      border: 1px solid #33435e;
+      border-radius: 8px;
+      padding: 13px 14px;
+      margin-top: 10px;
+      color: #f8fafc;
+      font-size: 14px;
+    }
+
+    .tag {
+      background: #2dd4bf;
+      color: #042f2e;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mock-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mock-actions button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 7px;
+      background: #14b8a6;
+      color: #052e2b;
+      font-weight: 800;
+    }
+
+    .mock-actions button:last-child {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    section { padding: 72px 0; }
+
+    .section-head {
+      max-width: 720px;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      margin: 14px 0 0;
+      font-size: 17px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .feature {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      min-height: 204px;
+    }
+
+    .feature h3, .price h3 {
+      margin: 0 0 10px;
+      font-size: 19px;
+    }
+
+    .feature p, .price p, .legal-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .platforms span {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #344054;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .pricing {
+      background: var(--soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .prices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 380px));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .price {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 26px;
+    }
+
+    .amount {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin: 18px 0;
+      color: var(--ink);
+    }
+
+    .amount strong {
+      font-size: 42px;
+      line-height: 1;
+    }
+
+    .price ul {
+      padding-left: 20px;
+      color: #344054;
+    }
+
+    .legal-links {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .legal-card {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid, .grid-3, .legal-links { grid-template-columns: 1fr; }
+      .prices { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .trust { grid-template-columns: 1fr; }
+      section { padding: 54px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap" aria-label="Main navigation">
+      <a class="brand" href="./index.html">
+        <img src="../icons/icon128.png" alt="PrivacyGuard icon">
+        <span>PrivacyGuard</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+        <a class="button" href="https://chrome.google.com/webstore/detail/REPLACE_WITH_EXTENSION_ID">Install</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Chrome extension for safer AI work</p>
+          <h1>PrivacyGuard</h1>
+          <p class="lead">
+            Detect and redact API keys, passwords, credit cards, SSN, emails, phone numbers,
+            private keys, and other sensitive data before they leak into AI chat tools.
+            Scanning runs locally in your browser.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="https://chrome.google.com/webstore/detail/REPLACE_WITH_EXTENSION_ID">Install from Chrome Web Store</a>
+            <a class="button secondary" href="#pricing">View pricing</a>
+          </div>
+          <div class="trust" aria-label="Product highlights">
+            <div><strong>100% local</strong><span>No text is uploaded to our servers for scanning.</span></div>
+            <div><strong>11 data types</strong><span>Secrets, payment data, IDs, tokens, and contact details.</span></div>
+            <div><strong>5 free scans</strong><span>Upgrade to Pro for unlimited daily protection.</span></div>
+          </div>
+        </div>
+
+        <div class="product-shot" aria-label="PrivacyGuard product preview">
+          <div class="shot-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="shot-body">
+            <div class="warning">
+              <strong>Sensitive data detected.</strong><br>
+              Review detected secrets before sending this text to an AI chatbot.
+            </div>
+            <div class="finding"><span>OpenAI API key</span><span class="tag">Secret</span></div>
+            <div class="finding"><span>Credit card number</span><span class="tag">Payment</span></div>
+            <div class="finding"><span>Email address</span><span class="tag">PII</span></div>
+            <div class="mock-actions">
+              <button type="button">Redact and Send</button>
+              <button type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Protect sensitive text before it leaves your browser.</h2>
+          <p>
+            PrivacyGuard is designed for developers, security-conscious teams, and AI users
+            who paste code, support tickets, customer notes, or internal data into chatbots.
+          </p>
+        </div>
+        <div class="grid-3">
+          <article class="feature">
+            <h3>Local detection</h3>
+            <p>PII and secret detection runs in the browser using local rules. Your scanned text is not sent to PrivacyGuard servers.</p>
+          </article>
+          <article class="feature">
+            <h3>Pre-send warning</h3>
+            <p>Warnings appear before you submit text, so you can redact, cancel, or intentionally continue.</p>
+          </article>
+          <article class="feature">
+            <h3>One-click redaction</h3>
+            <p>Replace detected secrets with placeholders and keep your workflow moving without manual editing.</p>
+          </article>
+          <article class="feature">
+            <h3>Configurable rules</h3>
+            <p>Choose which detection categories are active, including API keys, passwords, private keys, JWTs, emails, phone numbers, and IDs.</p>
+          </article>
+          <article class="feature">
+            <h3>Simple permissions</h3>
+            <p>The extension uses browser storage for settings and site access to detect sensitive text in supported input fields.</p>
+          </article>
+          <article class="feature">
+            <h3>No account required</h3>
+            <p>Install the extension and start scanning. Pro unlocks unlimited scans through a license tied to your purchase.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Works with major AI chat platforms.</h2>
+          <p>Use PrivacyGuard with the AI tools where sensitive paste mistakes are most likely to happen.</p>
+        </div>
+        <div class="platforms">
+          <span>ChatGPT</span>
+          <span>Claude</span>
+          <span>DeepSeek</span>
+          <span>Gemini</span>
+          <span>Kimi</span>
+          <span>Tongyi</span>
+          <span>Poe</span>
+          <span>Perplexity</span>
+          <span>Microsoft Copilot</span>
+          <span>Doubao</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Pricing</h2>
+          <p>Start free, upgrade when you want unlimited scanning.</p>
+        </div>
+        <div class="prices">
+          <article class="price">
+            <h3>Free</h3>
+            <p>For trying the extension.</p>
+            <div class="amount"><strong>$0</strong><span>/ forever</span></div>
+            <ul>
+              <li>5 scans per day</li>
+              <li>All detection categories</li>
+              <li>Local scanning</li>
+              <li>Manual redaction workflow</li>
+            </ul>
+            <a class="button secondary" href="https://chrome.google.com/webstore/detail/REPLACE_WITH_EXTENSION_ID">Install Free</a>
+          </article>
+          <article class="price">
+            <h3>Pro</h3>
+            <p>For daily AI users and developers.</p>
+            <div class="amount"><strong>$4.99</strong><span>/ month</span></div>
+            <ul>
+              <li>Unlimited daily scans</li>
+              <li>All detection categories</li>
+              <li>One-click redaction</li>
+              <li>Priority product updates</li>
+            </ul>
+            <a class="button" href="REPLACE_WITH_PADDLE_CHECKOUT_LINK">Upgrade to Pro</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Legal and support</h2>
+          <p>These pages are required for payment review and explain how purchases, data handling, and refunds work.</p>
+        </div>
+        <div class="legal-links">
+          <article class="legal-card">
+            <h3>Privacy Policy</h3>
+            <p>How PrivacyGuard handles scanned text, settings, and license checks.</p>
+            <p><a href="./privacy.html">Read privacy policy</a></p>
+          </article>
+          <article class="legal-card">
+            <h3>Terms</h3>
+            <p>Usage terms, acceptable use, subscriptions, and limitations.</p>
+            <p><a href="./terms.html">Read terms</a></p>
+          </article>
+          <article class="legal-card">
+            <h3>Refund Policy</h3>
+            <p>Refund eligibility and how customers can request help.</p>
+            <p><a href="./refund.html">Read refund policy</a></p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>PrivacyGuard by CJ Studio</span>
+      <span>Contact: <a href="mailto:2859955785@qq.com">2859955785@qq.com</a></span>
+    </div>
+  </footer>
+</body>
+</html>
