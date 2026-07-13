@@ -588,13 +588,16 @@
       token: 'live_3b41f3b803ebdd17b87c15523a0',
       eventCallback: function(event) {
         console.log('Paddle event:', event);
+        if (event && event.name === 'checkout.error') {
+          alert('Paddle checkout error: ' + (event.code || 'unknown') + '\n' + (event.detail || 'No detail returned.'));
+        }
       },
       checkout: {
         settings: {
           displayMode: 'overlay',
           theme: 'light',
           locale: 'en',
-          successUrl: 'https://privacyguard.bbfydc.cn/#pricing'
+          allowedPaymentMethods: ['card', 'paypal']
         }
       }
     });
@@ -606,7 +609,7 @@
           displayMode: 'overlay',
           theme: 'light',
           locale: 'en',
-          successUrl: 'https://privacyguard.bbfydc.cn/#pricing'
+          allowedPaymentMethods: ['card', 'paypal']
         },
         items: [
           { priceId: 'pri_01kx3nr0js6phnsf136v808xr9', quantity: 1 }
