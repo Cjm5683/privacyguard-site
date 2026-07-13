@@ -638,7 +638,17 @@
         })
         .catch(function(error) {
           console.error('Create checkout failed:', error);
-          alert('Unable to start checkout. Please contact support: 2859955785@qq.com');
+          var message = 'Unable to start checkout. Please contact support: 2859955785@qq.com';
+          if (error) {
+            if (error.paddle) {
+              message += '\n\nPaddle error:\n' + JSON.stringify(error.paddle, null, 2);
+            } else if (error.error) {
+              message += '\n\nError: ' + error.error;
+            } else if (error.message) {
+              message += '\n\nError: ' + error.message;
+            }
+          }
+          alert(message);
         });
     }
   </script>
