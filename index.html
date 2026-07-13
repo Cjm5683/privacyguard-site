@@ -586,11 +586,15 @@
   <script>
     Paddle.Initialize({
       token: 'live_3b41f3b803ebdd17b87c15523a0',
+      eventCallback: function(event) {
+        console.log('Paddle event:', event);
+      },
       checkout: {
         settings: {
           displayMode: 'overlay',
           theme: 'light',
-          locale: 'en'
+          locale: 'en',
+          successUrl: 'https://privacyguard.bbfydc.cn/#pricing'
         }
       }
     });
@@ -598,6 +602,12 @@
     function openPaddleCheckout(event) {
       event.preventDefault();
       Paddle.Checkout.open({
+        settings: {
+          displayMode: 'overlay',
+          theme: 'light',
+          locale: 'en',
+          successUrl: 'https://privacyguard.bbfydc.cn/#pricing'
+        },
         items: [
           { priceId: 'pri_01kx3nr0js6phnsf136v808xr9', quantity: 1 }
         ]
