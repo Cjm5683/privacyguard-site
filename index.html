@@ -543,7 +543,7 @@
               <li>One-click redaction</li>
               <li>Priority product updates</li>
             </ul>
-            <a class="button" href="mailto:2859955785@qq.com?subject=PrivacyGuard%20Pro%20Early%20Access">Upgrade to Pro</a>
+            <a class="button" href="#" onclick="openPaddleCheckout(event)">Upgrade to Pro</a>
           </article>
         </div>
       </div>
@@ -582,5 +582,27 @@
       <span>Contact: <a href="mailto:2859955785@qq.com">2859955785@qq.com</a></span>
     </div>
   </footer>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script>
+    Paddle.Initialize({
+      token: 'live_3b41f3b803ebdd17b87c15523a0',
+      checkout: {
+        settings: {
+          displayMode: 'overlay',
+          theme: 'light',
+          locale: 'en'
+        }
+      }
+    });
+
+    function openPaddleCheckout(event) {
+      event.preventDefault();
+      Paddle.Checkout.open({
+        items: [
+          { priceId: 'pri_01kx3nr0js6phnsf136v808xr9', quantity: 1 }
+        ]
+      });
+    }
+  </script>
 </body>
 </html>
