@@ -604,17 +604,42 @@
 
     function openPaddleCheckout(event) {
       event.preventDefault();
-      Paddle.Checkout.open({
-        settings: {
-          displayMode: 'overlay',
-          theme: 'light',
-          locale: 'en',
-          allowedPaymentMethods: ['card', 'paypal']
-        },
-        items: [
-          { priceId: 'pri_01kx3nr0js6phnsf136v808xr9', quantity: 1 }
-        ]
-      });
+      fetch('https://privacyguard-api.2859955785.workers.dev/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product: 'privacyguard_pro' })
+      })
+        .then(function(response) {
+          return response.json().then(function(data) {
+            if (!response.ok) throw data;
+            return data;
+          });
+        })
+        .then(function(data) {
+          if (data.transactionId) {
+            Paddle.Checkout.open({
+              transactionId: data.transactionId,
+              settings: {
+                displayMode: 'overlay',
+                theme: 'light',
+                locale: 'en',
+                allowedPaymentMethods: ['card', 'paypal']
+              }
+            });
+            return;
+          }
+
+          if (data.checkoutUrl) {
+            window.location.href = data.checkoutUrl;
+            return;
+          }
+
+          throw new Error('No checkout URL returned.');
+        })
+        .catch(function(error) {
+          console.error('Create checkout failed:', error);
+          alert('Unable to start checkout. Please contact support: 2859955785@qq.com');
+        });
     }
   </script>
 </body>
