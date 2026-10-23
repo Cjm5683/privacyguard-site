@@ -407,6 +407,7 @@
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
+        <a href="https://cjm5683.github.io/inboxmate-privacy/free-worker-kit-landing.html">Free Kit</a>
         <a href="./privacy.html">Privacy</a>
         <a href="./terms.html">Terms</a>
         <a class="button" href="#pricing">Upgrade</a>
@@ -579,6 +580,10 @@
   <footer>
     <div class="wrap footer-row">
       <span>PrivacyGuard by CJ Studio</span>
+      <span>
+        <a href="https://cjm5683.github.io/inboxmate-privacy/free-worker-kit-landing.html">Free Cloudflare Worker Kit</a>
+        — a Claude/GPT API proxy you deploy yourself, MIT licensed
+      </span>
       <span>Contact: <a href="mailto:2859955785@qq.com">2859955785@qq.com</a></span>
     </div>
   </footer>
@@ -602,9 +607,38 @@
       }
     });
 
+    // The custom domain is tried FIRST: *.workers.dev is DNS-poisoned on some
+    // networks (it resolves to a black-hole IP and the TCP connect hangs), so it
+    // must not be the primary endpoint. The workers.dev URL is a fallback.
+    var LICENSE_API_BASE_URLS = [
+      'https://privacyguard-api.bbfydc.cn',
+      'https://privacyguard-api.2859955785.workers.dev'
+    ];
+
+    async function fetchLicenseApi(path, init) {
+      var lastError = null;
+      for (var i = 0; i < LICENSE_API_BASE_URLS.length; i++) {
+        var controller = new AbortController();
+        var timer = setTimeout(function () { controller.abort(); }, 8000);
+        try {
+          var response = await fetch(
+            LICENSE_API_BASE_URLS[i] + path,
+            Object.assign({}, init, { signal: controller.signal })
+          );
+          clearTimeout(timer);
+          if (!response.ok) throw new Error('license_api_http_' + response.status);
+          return response;
+        } catch (err) {
+          clearTimeout(timer);
+          lastError = err;
+        }
+      }
+      throw lastError || new Error('license_api_unreachable');
+    }
+
     function openPaddleCheckout(event) {
       event.preventDefault();
-      fetch('https://privacyguard-api.2859955785.workers.dev/api/create-checkout', {
+      fetchLicenseApi('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product: 'privacyguard_pro' })
